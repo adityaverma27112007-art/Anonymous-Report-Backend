@@ -80,7 +80,17 @@ Tests:
 npm test
 ```
 
-The API listens on `http://localhost:3000` by default.
+The API listens on `http://localhost:3000` by default locally.
+
+### Deployed API
+
+**Production URL:** `https://anonymous-report-backend.onrender.com`
+
+Health check:
+
+`GET https://anonymous-report-backend.onrender.com/health`
+
+The production deployment runs on Render using Docker. Production secrets are configured in Render Environment Variables and are not committed to GitHub.
 
 ## API
 
@@ -268,10 +278,24 @@ Also, the report description itself can contain identifying information. The API
 
 ## cURL examples
 
-Submit:
+The following examples use the deployed Render API. Replace placeholder credentials and tokens with your own values.
+
+### Health check
 
 ```bash
-curl -X POST http://localhost:3000/api/reports \
+curl https://anonymous-report-backend.onrender.com/health
+```
+
+Expected response:
+
+```json
+{"status":"ok"}
+```
+
+### Submit an anonymous report
+
+```bash
+curl -X POST https://anonymous-report-backend.onrender.com/api/reports \
   -H "Content-Type: application/json" \
   -d '{
     "category":"Harassment",
@@ -279,40 +303,44 @@ curl -X POST http://localhost:3000/api/reports \
   }'
 ```
 
-Track:
+Save the returned `caseCode` for tracking.
+
+### Track a report
 
 ```bash
-curl -X POST http://localhost:3000/api/reports/track \
+curl -X POST https://anonymous-report-backend.onrender.com/api/reports/track \
   -H "Content-Type: application/json" \
   -d '{"caseCode":"PASTE_CASE_CODE_HERE"}'
 ```
 
-Login:
+### Moderator login
 
 ```bash
-curl -X POST http://localhost:3000/api/mod/auth/login \
+curl -X POST https://anonymous-report-backend.onrender.com/api/mod/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"moderator@example.com","password":"your-password"}'
 ```
 
-List reports:
+Copy the returned `accessToken` and use it as a Bearer token.
+
+### List reports
 
 ```bash
-curl http://localhost:3000/api/mod/reports \
+curl https://anonymous-report-backend.onrender.com/api/mod/reports \
   -H "Authorization: Bearer PASTE_JWT_HERE"
 ```
 
-Filter:
+### Filter reports
 
 ```bash
-curl "http://localhost:3000/api/mod/reports?status=UNDER_REVIEW&category=Security" \
+curl "https://anonymous-report-backend.onrender.com/api/mod/reports?status=UNDER_REVIEW&category=Security" \
   -H "Authorization: Bearer PASTE_JWT_HERE"
 ```
 
-Update:
+### Update report status
 
 ```bash
-curl -X PATCH http://localhost:3000/api/mod/reports/REPORT_UUID/status \
+curl -X PATCH https://anonymous-report-backend.onrender.com/api/mod/reports/REPORT_UUID/status \
   -H "Authorization: Bearer PASTE_JWT_HERE" \
   -H "Content-Type: application/json" \
   -d '{"status":"UNDER_REVIEW","message":"The report is being reviewed."}'
