@@ -1,0 +1,158 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Confidential Reporting API",
+    "version": "1.0.0",
+    "description": "Anonymous reporting and moderator case-management API."
+  },
+  "servers": [{ "url": "http://localhost:3000" }],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": { "200": { "description": "Service is healthy" } }
+      }
+    },
+    "/api/reports": {
+      "post": {
+        "summary": "Submit an anonymous report",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReportSubmission" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "429": { "$ref": "#/components/responses/RateLimited" }
+        }
+      }
+    },
+    "/api/reports/track": {
+      "post": {
+        "summary": "Track a report by case code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["caseCode"],
+                "properties": {
+                  "caseCode": { "type": "string", "minLength": 32, "maxLength": 32 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Current public case status" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/mod/auth/login": {
+      "post": {
+        "summary": "Moderator login",
+        "responses": {
+          "200": { "description": "JWT issued" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/api/mod/reports": {
+      "get": {
+        "summary": "List reports",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Reports" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/mod/reports/{id}": {
+      "get": {
+        "summary": "Get one report",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/reportId" }],
+        "responses": {
+          "200": { "description": "Report" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/mod/reports/{id}/status": {
+      "patch": {
+        "summary": "Advance report status",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/reportId" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/StatusUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated report" },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "409": { "description": "Invalid status transition" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "parameters": {
+      "reportId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" }
+      }
+    },
+    "schemas": {
+      "ReportSubmission": {
+        "type": "object",
+        "required": ["category", "description"],
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": ["Security", "Harassment", "Corruption", "Technical", "Other"]
+          },
+          "description": { "type": "string", "minLength": 10, "maxLength": 10000 },
+          "evidenceUrl": { "type": ["string", "null"], "format": "uri" }
+        }
+      },
+      "StatusUpdate": {
+        "type": "object",
+        "required": ["status", "message"],
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["UNDER_REVIEW", "RESOLVED", "DISMISSED"]
+          },
+          "message": { "type": "string", "minLength": 1, "maxLength": 1000 }
+        }
+      }
+    },
+    "responses": {
+      "ValidationError": { "description": "Invalid request data" },
+      "NotFound": { "description": "Resource not found" },
+      "RateLimited": { "description": "Too many requests" }
+    }
+  }
+}
